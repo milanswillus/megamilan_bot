@@ -134,3 +134,14 @@ def delete_all_messages_from_file(chat_id):
             return False, 0
     return False, 0
 
+def clear_entire_message_file() -> bool:
+    """Empties the messages.json file completely."""
+    path = get_messages_file_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump([], f, indent=4, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"Fehler beim Leeren der Nachrichten-Datei: {e}")
+        return False
+

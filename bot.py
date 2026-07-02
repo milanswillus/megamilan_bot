@@ -25,7 +25,8 @@ from state_manager import (
     save_message_to_file,
     get_messages_file_path,
     delete_last_message_from_file,
-    delete_all_messages_from_file
+    delete_all_messages_from_file,
+    clear_entire_message_file
 )
 from meme_handler import get_available_templates, create_meme, is_video_file
 
@@ -407,6 +408,21 @@ async def delete_all_messages_command(update: Update, context: ContextTypes.DEFA
             reply_markup=get_main_menu_keyboard()
         )
 
+async def clear_all_messages_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Löscht absolut alle Nachrichten auf mil4n.de."""
+    success = clear_entire_message_file()
+    
+    if success:
+        await update.message.reply_text(
+            "Der gesamte Chatverlauf auf mil4n.de wurde gelöscht.",
+            reply_markup=get_main_menu_keyboard()
+        )
+    else:
+        await update.message.reply_text(
+            "Fehler beim Leeren des Chatverlaufs.",
+            reply_markup=get_main_menu_keyboard()
+        )
+
 def main():
     token = TELEGRAM_BOT_TOKEN
     if not token or token.startswith("YOUR_NEW_BOT_TOKEN"):
@@ -432,6 +448,8 @@ def main():
     application.add_handler(CommandHandler('changename', changename_command))
     application.add_handler(CommandHandler('deletelastmessage', delete_last_message_command))
     application.add_handler(CommandHandler('deleteallmessages', delete_all_messages_command))
+    application.add_handler(CommandHandler('clearall', clear_all_messages_command))
+    application.add_handler(CommandHandler('clearallmessages', clear_all_messages_command))
     
     # Callback query handler für das Inline-Meme-Menü
     application.add_handler(CallbackQueryHandler(handle_callback))
