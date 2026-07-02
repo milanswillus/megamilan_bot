@@ -59,9 +59,9 @@ async def list_templates(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Zeige Commands mit und ohne Underscore
         cmd1 = f"/{key}"
         cmd2 = f"/{key.replace('_', '')}"
-        lines.append(f"• *{info['display_name']}* ({info['type']}):\n  👉 {cmd1} oder {cmd2}")
+        lines.append(f"• <b>{info['display_name']}</b> ({info['type']}):\n  👉 {cmd1} oder {cmd2}")
         
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
 
 async def generate_and_send(update: Update, context: ContextTypes.DEFAULT_TYPE, template_key: str, text: str):
     """Generiert das Meme und schickt es zurück."""
@@ -113,9 +113,9 @@ def make_template_command(template_key: str):
             # Nur Command: Auswahl speichern und auf Nachricht warten
             set_active_template(chat_id, template_key)
             await update.message.reply_text(
-                f"Template *{template_key.replace('_', ' ').title()}* ausgewählt.\n"
+                f"Template <b>{template_key.replace('_', ' ').title()}</b> ausgewählt.\n"
                 "Sende mir jetzt den Text für das Meme als normale Nachricht.",
-                parse_mode="Markdown"
+                parse_mode="HTML"
             )
     return handler
 

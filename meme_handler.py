@@ -10,6 +10,13 @@ from config import TEMPLATE_DIR, OUTPUT_DIR
 if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = PIL.Image.LANCZOS
 
+# --- TEMPLATE CONFIGURATIONS ---
+TEMPLATE_CONFIGS = {
+    "sad_megamind": {
+        "position": "top"
+    }
+}
+
 def normalize_template_key(name: str) -> str:
     """Normiert den Ordner- oder Dateinamen auf einen Command-Key."""
     name = name.lower()
@@ -83,7 +90,7 @@ def wrap_text_pil(text: str, font: ImageFont.ImageFont, max_width: int) -> str:
         
     return '\n'.join(lines)
 
-def generate_video_meme(input_path: Path, text: str, output_path: Path) -> bool:
+def generate_video_meme(input_path: Path, text: str, output_path: Path, position: str = "center") -> bool:
     """Erstellt ein Video-Meme mit moviepy."""
     video = None
     txt_clip = None
@@ -98,6 +105,14 @@ def generate_video_meme(input_path: Path, text: str, output_path: Path) -> bool:
         upscale_factor = 2
         target_width = video.w * 0.9
 
+        # Position bestimmen
+        if position == "top":
+            pos = ('center', int(min_dim * 0.05))
+        elif position == "bottom":
+            pos = ('center', int(min_dim * 0.95 - (50 / upscale_factor)))
+        else:
+            pos = 'center'
+
         txt_clip = TextClip(
             text,
             fontsize=50,             
@@ -108,7 +123,7 @@ def generate_video_meme(input_path: Path, text: str, output_path: Path) -> bool:
             method='caption',
             size=(target_width * upscale_factor, None),
             align='Center'
-        ).resize(1/upscale_factor).set_position('center').set_duration(video.duration)
+        ).resize(1/upscale_factor).set_position(pos).set_duration(video.duration)
 
         final_video = CompositeVideoClip([video, txt_clip])
         
@@ -134,7 +149,7 @@ def generate_video_meme(input_path: Path, text: str, output_path: Path) -> bool:
         if final_video:
             final_video.close()
 
-def generate_image_meme(input_path: Path, text: str, output_path: Path) -> bool:
+def generate_image_meme(input_path: Path, text: str, output_path: Path, position: str = "center") -> bool:
     """Erstellt ein Bild-Meme mit Pillow."""
     try:
         with PIL.Image.open(input_path) as img:
@@ -168,14 +183,20 @@ def generate_image_meme(input_path: Path, text: str, output_path: Path) -> bool:
             max_width = int(min_dim * 0.9)
             wrapped_text = wrap_text_pil(text, font, max_width)
             
-            # Textposition berechnen (Zentrum)
+            # Textposition berechnen
             # getbbox() liefert (left, top, right, bottom)
             text_bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font)
             text_w = text_bbox[2] - text_bbox[0]
             text_h = text_bbox[3] - text_bbox[1]
             
             x = (min_dim - text_w) / 2
-            y = (min_dim - text_h) / 2
+            
+            if position == "top":
+                y = min_dim * 0.05
+            elif position == "bottom":
+                y = min_dim - text_h - min_dim * 0.05
+            else:
+                y = (min_dim - text_h) / 2
             
             # Zeichnen mit weißem Text und schwarzem Rand (stroke)
             draw.multiline_text(
@@ -224,11 +245,15 @@ def create_meme(template_key: str, text: str) -> Path | None:
     # Sicherstellen, dass Output-Ordner existiert
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     
-    # 3. Generieren basierend auf Dateityp
+    # 3. Position bestimmen
+    config = TEMPLATE_CONFIGS.get(template_key, {})
+    position = config.get("position", "center")
+    
+    # 4. Generieren basierend auf Dateityp
     success = False
     if is_video_file(input_path):
-        success = generate_video_meme(input_path, text, output_path)
+        success = generate_video_meme(input_path, text, output_path, position=position)
     else:
-        success = generate_image_meme(input_path, text, output_path)
+        success = generate_image_meme(input_path, text, output_path, position=position)
         
     return output_path if success else None
