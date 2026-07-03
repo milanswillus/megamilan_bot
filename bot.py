@@ -423,6 +423,29 @@ async def clear_all_messages_command(update: Update, context: ContextTypes.DEFAU
             reply_markup=get_main_menu_keyboard()
         )
 
+def run_hourly_cleanup():
+    import time
+    import datetime
+    
+    logger.info("Hourly cleanup thread started.")
+    last_cleared_hour = -1
+    
+    while True:
+        now = datetime.datetime.now()
+        # Trigger at the top of the hour (minute 0)
+        if now.minute == 0 and now.hour != last_cleared_hour:
+            try:
+                success = clear_entire_message_file()
+                if success:
+                    logger.info(f"Hourly cleanup: Cleared all messages at {now.strftime('%d.%m.%Y, %H:%M:%S')}")
+                    last_cleared_hour = now.hour
+                else:
+                    logger.error("Hourly cleanup: Failed to clear messages.")
+            except Exception as e:
+                logger.error(f"Error during hourly cleanup: {e}")
+        # Check every 10 seconds
+        time.sleep(10)
+
 def main():
     token = TELEGRAM_BOT_TOKEN
     if not token or token.startswith("YOUR_NEW_BOT_TOKEN"):
@@ -433,6 +456,9 @@ def main():
 
     # Start HTTP API Server for the website in a background thread
     threading.Thread(target=run_http_server, args=(5005,), daemon=True).start()
+    
+    # Start hourly cleanup thread
+    threading.Thread(target=run_hourly_cleanup, daemon=True).start()
 
     application = ApplicationBuilder().token(token).build()
     
