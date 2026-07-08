@@ -53,6 +53,14 @@ def get_cancel_keyboard():
     keyboard = [[KeyboardButton("/cancel")]]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
+def normalize_url(url: str) -> str:
+    """Stellt sicher, dass ein Link ein Schema hat, damit er nicht relativ
+    interpretiert wird (z.B. 'www.supreme.com' -> 'https://www.supreme.com')."""
+    url = url.strip()
+    if url and not url.startswith(("http://", "https://", "mailto:", "tel:")):
+        url = "https://" + url
+    return url
+
 
 # --- HTTP API SERVER FOR THE WEBSITE ---
 class MessagesAPIHandler(http.server.BaseHTTPRequestHandler):
@@ -344,7 +352,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     elif state == "waiting_for_youtube_url":
         clear_user_state(chat_id)
-        url = text.strip()
+        url = normalize_url(text)
         if save_link_to_file("youtube", url):
             await update.message.reply_text(
                 f"YouTube-Link auf mil4n.de aktualisiert!\n\n{url}",
@@ -481,7 +489,7 @@ async def set_youtube_command(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         return
 
-    url = " ".join(context.args).strip()
+    url = normalize_url(" ".join(context.args))
     if save_link_to_file("youtube", url):
         await update.message.reply_text(
             f"YouTube-Link auf mil4n.de aktualisiert!\n\n{url}",
@@ -518,6 +526,8 @@ async def _save_extra_link(update: Update, url: str):
     """Speichert den Zusatz-Link. '-' oder leer setzt ihn zurück auf die Seite selbst."""
     if url == "-":
         url = ""
+    else:
+        url = normalize_url(url)
     if save_link_to_file("extra", url):
         if url:
             await update.message.reply_text(
